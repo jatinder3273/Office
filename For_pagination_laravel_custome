@@ -1,0 +1,18 @@
+public function campaignUser($id){
+        $campaign = Campaign::find($id);
+        $allUsers = array();
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $perPage = 6;
+        foreach ($campaign->users as $customerid) {
+            $exclude_user = CampaignExcludeUser::where('campaign_id',$id)->where('customer_id',$customerid->customer_id)->count();
+            if($exclude_user == 0){
+                $customer = Customer::find($customerid->customer_id)->toArray();
+                array_push($allUsers, $customer);
+            }
+        }
+        $collection = collect($allUsers);
+        $paginate = new LengthAwarePaginator($collection->forPage($currentPage, $perPage), $collection->count(), $perPage, $currentPage, [
+            'path'=>request()->url()]);
+        $notifications = Notification::Where('reciver_id',Auth::guard('company')->user()['id'])->Where('is_read',0)->count();
+        return view('campaign.campaign_users',['noti'=>$notifications,'users' => $paginate,'id' => $id]);
+    }
